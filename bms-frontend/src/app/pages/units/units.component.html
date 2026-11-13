@@ -1,0 +1,125 @@
+<div class="page">
+  <nav class="navbar">
+    <h1>Units</h1>
+    <div class="nav-links">
+      <a routerLink="/dashboard">Dashboard</a>
+      <a routerLink="/tenants">Tenants</a>
+      <a routerLink="/leases">Leases</a>
+      <app-notification-bell />
+    </div>
+  </nav>
+
+  <div class="content">
+    <div class="page-header">
+      <h2>Unit Management</h2>
+      <button class="btn btn-primary" (click)="openCreate()">+ Add Unit</button>
+    </div>
+
+    <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+    <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+    <div *ngIf="loading" class="loading">Loading...</div>
+
+    <!-- Form Modal -->
+    <div *ngIf="showForm" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>{{ editingUnit ? 'Edit Unit' : 'Add New Unit' }}</h3>
+          <button class="close-btn" (click)="cancelForm()">✕</button>
+        </div>
+        <form [formGroup]="unitForm" (ngSubmit)="onSubmit()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Floor Number *</label>
+              <input type="number" formControlName="floorNumber" min="1" />
+              <span *ngIf="unitForm.get('floorNumber')?.invalid && unitForm.get('floorNumber')?.touched"
+                class="validation-error">Required, min 1</span>
+            </div>
+            <div class="form-group">
+              <label>Unit Number *</label>
+              <input type="text" formControlName="unitNumber" placeholder="e.g. 1A" />
+              <span *ngIf="unitForm.get('unitNumber')?.invalid && unitForm.get('unitNumber')?.touched"
+                class="validation-error">Required</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Unit Type *</label>
+              <select formControlName="unitType">
+                <option *ngFor="let t of unitTypes" [value]="t.value">{{ t.label }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Area (m²) *</label>
+              <input type="number" formControlName="areaSqMeters" min="1" placeholder="e.g. 45" />
+              <span *ngIf="unitForm.get('areaSqMeters')?.invalid && unitForm.get('areaSqMeters')?.touched"
+                class="validation-error">Required</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Monthly Rent (ETB) *</label>
+              <input type="number" formControlName="monthlyRent" min="1" placeholder="e.g. 5000" />
+              <span *ngIf="unitForm.get('monthlyRent')?.invalid && unitForm.get('monthlyRent')?.touched"
+                class="validation-error">Required</span>
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <input type="text" formControlName="description" placeholder="Optional description" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancelForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="unitForm.invalid">
+              {{ editingUnit ? 'Update' : 'Create' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Units Table -->
+    <table *ngIf="units.length > 0">
+      <thead>
+        <tr>
+          <th>Unit No</th>
+          <th>Floor</th>
+          <th>Type</th>
+          <th>Area (m²)</th>
+          <th>Monthly Rent</th>
+          <th>Status</th>
+          <th>Description</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let unit of units">
+          <td>{{ unit.unitNumber }}</td>
+          <td>{{ unit.floorNumber }}</td>
+          <td>{{ unit.unitType }}</td>
+          <td>{{ unit.areaSqMeters }}</td>
+          <td>{{ unit.monthlyRent | number }}</td>
+          <td>
+            <span class="badge"
+              [class.badge-available]="unit.status === 'Available'"
+              [class.badge-occupied]="unit.status === 'Occupied'"
+              [class.badge-maintenance]="unit.status === 'UnderMaintenance'"
+              [class.badge-reserved]="unit.status === 'Reserved'">
+              {{ unit.status }}
+            </span>
+          </td>
+          <td>{{ unit.description }}</td>
+          <td class="actions">
+            <button class="btn btn-sm btn-secondary" (click)="openEdit(unit)">Edit</button>
+            <button class="btn btn-sm btn-danger"
+              [disabled]="unit.status === 'Occupied'"
+              (click)="deleteUnit(unit.id)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!loading && units.length === 0 && !error" class="empty-state">
+      No units found. Add your first unit.
+    </div>
+  </div>
+</div>

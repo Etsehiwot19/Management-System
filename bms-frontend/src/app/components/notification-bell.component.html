@@ -1,0 +1,24 @@
+<div class="notification-menu">
+  <button class="notification-toggle" type="button" (click)="toggle()" aria-label="Notifications">
+    <span aria-hidden="true">♢</span>
+    <span>Notifications</span>
+    <span *ngIf="unreadCount > 0" class="notification-count">{{ unreadCount }}</span>
+  </button>
+  <section *ngIf="open" class="notification-panel" aria-label="Notifications">
+    <div class="notification-panel-header">
+      <strong>Notifications</strong>
+      <button type="button" class="text-button" (click)="markAllAsRead()" [disabled]="unreadCount === 0">Mark all read</button>
+    </div>
+    <p *ngIf="error" class="notification-error" role="alert">{{ error }}</p>
+    <div *ngIf="!error && notifications.length === 0" class="notification-empty">You're all caught up.</div>
+    <button *ngFor="let notification of notifications"
+            type="button"
+            class="notification-item"
+            [class.unread]="!notification.isRead"
+            (click)="markAsRead(notification)">
+      <strong>{{ notification.title }}</strong>
+      <span>{{ notification.message }}</span>
+      <small>{{ notification.createdAt | date:'medium' }}</small>
+    </button>
+  </section>
+</div>

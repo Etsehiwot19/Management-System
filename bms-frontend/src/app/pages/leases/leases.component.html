@@ -1,0 +1,179 @@
+<div class="page">
+  <nav class="navbar">
+    <h1>Leases</h1>
+    <div class="nav-links">
+      <a routerLink="/dashboard">Dashboard</a>
+      <a routerLink="/units">Units</a>
+      <a routerLink="/tenants">Tenants</a>
+      <a routerLink="/invoices">Invoices</a>
+      <app-notification-bell />
+    </div>
+  </nav>
+
+  <div class="content">
+    <div class="page-header">
+      <h2>Lease Management</h2>
+      <button class="btn btn-primary" (click)="openCreate()">+ New Lease</button>
+    </div>
+
+    <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+    <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+    <!-- Create Lease Modal -->
+    <div *ngIf="showCreateForm" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Create New Lease</h3>
+          <button class="close-btn" (click)="cancelCreate()">✕</button>
+        </div>
+        <form [formGroup]="createForm" (ngSubmit)="submitCreate()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Unit *</label>
+              <select formControlName="unitId">
+                <option value="">-- Select Available Unit --</option>
+                <option *ngFor="let u of units" [value]="u.id">
+                  {{ u.unitNumber }} — Floor {{ u.floorNumber }} ({{ u.unitType }}) — {{ u.monthlyRent | number }} ETB
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tenant *</label>
+              <select formControlName="tenantId">
+                <option value="">-- Select Tenant --</option>
+                <option *ngFor="let t of tenants" [value]="t.id">{{ t.organizationName }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Date *</label>
+              <input type="date" formControlName="startDate" />
+            </div>
+            <div class="form-group">
+              <label>End Date *</label>
+              <input type="date" formControlName="endDate" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Monthly Rent (ETB) *</label>
+              <input type="number" formControlName="monthlyRent" min="1" />
+            </div>
+            <div class="form-group">
+              <label>Deposit Amount (ETB) *</label>
+              <input type="number" formControlName="depositAmount" min="0" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancelCreate()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="createForm.invalid">Create Lease</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Renew Modal -->
+    <div *ngIf="showRenewForm" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Renew Lease — {{ selectedLease?.unitNumber }} / {{ selectedLease?.tenantName }}</h3>
+          <button class="close-btn" (click)="cancelRenew()">✕</button>
+        </div>
+        <form [formGroup]="renewForm" (ngSubmit)="submitRenew()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>New End Date *</label>
+              <input type="date" formControlName="newEndDate" />
+            </div>
+            <div class="form-group">
+              <label>New Monthly Rent (ETB) *</label>
+              <input type="number" formControlName="newMonthlyRent" min="1" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancelRenew()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="renewForm.invalid">Renew</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Terminate Modal -->
+    <div *ngIf="showTerminateForm" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Terminate Lease — {{ selectedLease?.unitNumber }} / {{ selectedLease?.tenantName }}</h3>
+          <button class="close-btn" (click)="cancelTerminate()">✕</button>
+        </div>
+        <form [formGroup]="terminateForm" (ngSubmit)="submitTerminate()">
+          <div class="form-group">
+            <label>Termination Reason *</label>
+            <textarea formControlName="terminationReason" rows="3"
+              placeholder="Explain the reason..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancelTerminate()">Cancel</button>
+            <button type="submit" class="btn btn-danger" [disabled]="terminateForm.invalid">Terminate</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    
+
+    <!-- Leases Table -->
+    <table *ngIf="leases.length > 0">
+      <thead>
+        <tr>
+          <th>Unit</th>
+          <th>Tenant</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Monthly Rent</th>
+          <th>Deposit</th>
+          <th>Status</th>
+          <th>Expires In</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let lease of leases">
+          <td>{{ lease.unitNumber }}</td>
+          <td>{{ lease.tenantName }}</td>
+          <td>{{ lease.startDate | date:'mediumDate' }}</td>
+          <td>{{ lease.endDate | date:'mediumDate' }}</td>
+          <td>{{ lease.monthlyRent | number }} ETB</td>
+          <td>{{ lease.depositAmount | number }} ETB</td>
+          <td>
+            <span class="badge"
+              [class.badge-active]="lease.status === 'Active'"
+              [class.badge-inactive]="lease.status === 'Terminated'"
+              [class.badge-warning]="lease.status === 'PendingRenewal' || lease.status === 'Expired'">
+              {{ lease.status }}
+            </span>
+          </td>
+          <td>
+            <span *ngIf="lease.status === 'Active'"
+              [class.text-warning]="daysUntilExpiry(lease.endDate) <= 30">
+              {{ daysUntilExpiry(lease.endDate) }} days
+            </span>
+            <span *ngIf="lease.status !== 'Active'">—</span>
+          </td>
+          <td class="actions">
+            <button class="btn btn-sm btn-secondary"
+              *ngIf="lease.status !== 'Terminated'"
+              (click)="openRenew(lease)">Renew</button>
+            <button class="btn btn-sm btn-danger"
+              *ngIf="lease.status === 'Active'"
+              (click)="openTerminate(lease)">Terminate</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!loading && leases.length === 0 && !error" class="empty-state">
+      No leases found. Create your first lease using the button above.
+    </div>
+  </div>
+</div>

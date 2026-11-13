@@ -1,0 +1,140 @@
+{
+  "info": {
+    "_postman_id": "c1b087f0-3264-4d03-95ac-000000000001",
+    "name": "Building Management System API",
+    "description": "Development requests for authentication, property operations, reports, and notifications. Set baseUrl and token after signing in.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5014/api" },
+    { "key": "token", "value": "" },
+    { "key": "leaseId", "value": "1" },
+    { "key": "invoiceId", "value": "1" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Property Manager\",\n  \"email\": \"manager@example.com\",\n  \"password\": \"Manager123\",\n  \"role\": \"Manager\"\n}" },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  pm.collectionVariables.set('token', pm.response.json().token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"manager@example.com\",\n  \"password\": \"Manager123\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard and reports",
+      "item": [
+        { "name": "Dashboard summary", "request": { "method": "GET", "url": "{{baseUrl}}/reports/dashboard" } },
+        { "name": "Reports", "request": { "method": "GET", "url": "{{baseUrl}}/reports?fromDate=2026-01-01&toDate=2026-12-31&expiryWithinDays=30" } },
+        { "name": "Export Excel", "request": { "method": "GET", "url": "{{baseUrl}}/reports/export?fromDate=2026-01-01&toDate=2026-12-31&expiryWithinDays=30" } }
+      ]
+    },
+    {
+      "name": "Units and tenants",
+      "item": [
+        { "name": "List units", "request": { "method": "GET", "url": "{{baseUrl}}/units" } },
+        { "name": "List tenants", "request": { "method": "GET", "url": "{{baseUrl}}/tenants" } }
+      ]
+    },
+    {
+      "name": "Leases",
+      "item": [
+        { "name": "List leases", "request": { "method": "GET", "url": "{{baseUrl}}/leases" } },
+        {
+          "name": "Create lease",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"unitId\": 6,\n  \"tenantId\": 1,\n  \"startDate\": \"2026-12-01T00:00:00Z\",\n  \"endDate\": \"2027-11-30T00:00:00Z\",\n  \"monthlyRent\": 8000,\n  \"depositAmount\": 8000\n}" },
+            "url": "{{baseUrl}}/leases"
+          }
+        },
+        {
+          "name": "Renew lease",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"newEndDate\": \"2028-11-30T00:00:00Z\",\n  \"newMonthlyRent\": 8500\n}" },
+            "url": "{{baseUrl}}/leases/{{leaseId}}/renew"
+          }
+        },
+        {
+          "name": "Terminate lease",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"terminationReason\": \"End of tenancy\"\n}" },
+            "url": "{{baseUrl}}/leases/{{leaseId}}/terminate"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invoices and payments",
+      "item": [
+        { "name": "List invoices", "request": { "method": "GET", "url": "{{baseUrl}}/invoices" } },
+        { "name": "Outstanding balances", "request": { "method": "GET", "url": "{{baseUrl}}/invoices/outstanding-balances" } },
+        {
+          "name": "Generate monthly invoices",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"month\": 12,\n  \"year\": 2026\n}" },
+            "url": "{{baseUrl}}/invoices/generate"
+          }
+        },
+        { "name": "List payments", "request": { "method": "GET", "url": "{{baseUrl}}/payments" } },
+        {
+          "name": "Record payment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"invoiceId\": {{invoiceId}},\n  \"amountPaid\": 1000,\n  \"paymentDate\": \"2026-11-13T00:00:00Z\",\n  \"paymentMethod\": 1,\n  \"referenceNumber\": \"TXN-001\",\n  \"notes\": \"Monthly rent\"\n}" },
+            "url": "{{baseUrl}}/payments"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        { "name": "List notifications", "request": { "method": "GET", "url": "{{baseUrl}}/notifications" } },
+        { "name": "Unread count", "request": { "method": "GET", "url": "{{baseUrl}}/notifications/unread-count" } },
+        { "name": "Mark all read", "request": { "method": "PATCH", "url": "{{baseUrl}}/notifications/read-all" } }
+      ]
+    }
+  ]
+}

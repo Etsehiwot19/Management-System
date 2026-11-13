@@ -1,0 +1,32 @@
+@BMS.API_HostAddress = http://localhost:5014
+@token = replace-with-jwt
+@api = {{BMS.API_HostAddress}}/api
+
+### Log in
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "manager@example.com",
+  "password": "Manager123"
+}
+
+### Dashboard summary
+GET {{api}}/reports/dashboard
+Authorization: Bearer {{token}}
+
+### Filtered reports
+GET {{api}}/reports?fromDate=2026-01-01&toDate=2026-12-31&expiryWithinDays=30
+Authorization: Bearer {{token}}
+
+### Export Excel-compatible workbook
+GET {{api}}/reports/export?fromDate=2026-01-01&toDate=2026-12-31&expiryWithinDays=30
+Authorization: Bearer {{token}}
+
+### Notifications
+GET {{api}}/notifications
+Authorization: Bearer {{token}}
+
+### Seeded leases
+GET {{api}}/leases
+Authorization: Bearer {{token}}

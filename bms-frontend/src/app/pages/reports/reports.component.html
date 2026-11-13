@@ -1,0 +1,116 @@
+<div class="page">
+  <nav class="navbar">
+    <h1>Building Management System</h1>
+    <div class="nav-links">
+      <a routerLink="/dashboard">Dashboard</a>
+      <a routerLink="/units">Units</a>
+      <a routerLink="/leases">Leases</a>
+      <a routerLink="/invoices">Invoices</a>
+      <app-notification-bell />
+    </div>
+  </nav>
+
+  <main class="content">
+    <div class="page-header">
+      <div>
+        <h2>Reports</h2>
+        <p class="report-intro">Occupancy, collected revenue, arrears, and upcoming expiries.</p>
+      </div>
+      <button class="btn btn-primary" type="button" (click)="exportReports()" [disabled]="exporting || loading">
+        {{ exporting ? 'Exporting...' : 'Export Excel' }}
+      </button>
+    </div>
+
+    <form class="report-filters" (ngSubmit)="loadReports()">
+      <div class="form-group">
+        <label for="fromDate">From date</label>
+        <input id="fromDate" name="fromDate" type="date" [(ngModel)]="filters.fromDate" required />
+      </div>
+      <div class="form-group">
+        <label for="toDate">To date</label>
+        <input id="toDate" name="toDate" type="date" [(ngModel)]="filters.toDate" required />
+      </div>
+      <div class="form-group">
+        <label for="expiryWithinDays">Expiry window (days)</label>
+        <input id="expiryWithinDays" name="expiryWithinDays" type="number" min="0" max="3650" [(ngModel)]="filters.expiryWithinDays" required />
+      </div>
+      <button class="btn btn-secondary" type="submit" [disabled]="loading">Apply filters</button>
+    </form>
+
+    <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+    <div *ngIf="loading" class="loading">Loading reports...</div>
+
+    <ng-container *ngIf="!loading && reports">
+      <section class="report-section">
+        <div class="report-section-heading">
+          <h3>Occupancy</h3>
+          <span>{{ reports.occupancy.occupancyRate | number:'1.0-2' }}% occupied</span>
+        </div>
+        <div class="report-kpis">
+          <div class="report-kpi"><span>Total units</span><strong>{{ reports.occupancy.totalUnits }}</strong></div>
+          <div class="report-kpi"><span>Occupied</span><strong>{{ reports.occupancy.occupiedUnits }}</strong></div>
+          <div class="report-kpi"><span>Available</span><strong>{{ reports.occupancy.availableUnits }}</strong></div>
+        </div>
+      </section>
+
+      <section class="report-section">
+        <div class="report-section-heading">
+          <h3>Revenue collected</h3>
+          <span>{{ filters.fromDate }} to {{ filters.toDate }}</span>
+        </div>
+        <table>
+          <thead><tr><th>Month</th><th>Payments received</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let item of reports.revenue">
+              <td>{{ item.year }}-{{ item.month | number:'2.0' }}</td>
+              <td>{{ item.amount | number:'1.2-2' }} ETB</td>
+            </tr>
+            <tr *ngIf="reports.revenue.length === 0"><td colspan="2">No revenue in this period.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="report-section">
+        <div class="report-section-heading"><h3>Arrears</h3><span>{{ reports.arrears.length }} unpaid invoice(s)</span></div>
+        <table>
+          <thead><tr><th>Invoice</th><th>Tenant</th><th>Unit</th><th>Due</th><th>Balance</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let item of reports.arrears">
+              <td>{{ item.invoiceNumber }}</td><td>{{ item.tenantName }}</td><td>{{ item.unitNumber }}</td>
+              <td>{{ item.dueDate | date:'mediumDate' }}</td><td>{{ item.outstandingBalance | number:'1.2-2' }} ETB</td>
+            </tr>
+            <tr *ngIf="reports.arrears.length === 0"><td colspan="5">No arrears in this period.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="report-section">
+        <div class="report-section-heading"><h3>Leases expiring</h3><span>Within {{ filters.expiryWithinDays }} days</span></div>
+        <table>
+          <thead><tr><th>Tenant</th><th>Unit</th><th>End date</th><th>Monthly rent</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let item of reports.leaseExpiries">
+              <td>{{ item.tenantName }}</td><td>{{ item.unitNumber }}</td>
+              <td>{{ item.endDate | date:'mediumDate' }}</td><td>{{ item.monthlyRent | number:'1.2-2' }} ETB</td>
+            </tr>
+            <tr *ngIf="reports.leaseExpiries.length === 0"><td colspan="4">No leases expire in this window.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="report-section">
+        <div class="report-section-heading"><h3>Documents expiring</h3><span>Within {{ filters.expiryWithinDays }} days</span></div>
+        <table>
+          <thead><tr><th>Tenant</th><th>Document</th><th>Expiry date</th><th>Verified</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let item of reports.documentExpiries">
+              <td>{{ item.tenantName }}</td><td>{{ item.documentType }}</td>
+              <td>{{ item.expiryDate | date:'mediumDate' }}</td><td>{{ item.isVerified ? 'Yes' : 'No' }}</td>
+            </tr>
+            <tr *ngIf="reports.documentExpiries.length === 0"><td colspan="4">No documents expire in this window.</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </ng-container>
+  </main>
+</div>

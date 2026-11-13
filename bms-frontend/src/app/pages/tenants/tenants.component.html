@@ -1,0 +1,121 @@
+<div class="page">
+  <nav class="navbar">
+    <h1>Tenants</h1>
+    <div class="nav-links">
+      <a routerLink="/dashboard">Dashboard</a>
+      <a routerLink="/units">Units</a>
+      <a routerLink="/leases">Leases</a>
+      <app-notification-bell />
+    </div>
+  </nav>
+
+  <div class="content">
+    <div class="page-header">
+      <h2>Tenant Management</h2>
+      <button class="btn btn-primary" (click)="openCreate()">+ Add Tenant</button>
+    </div>
+
+    <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+    <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+    <div *ngIf="showForm" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>{{ editingTenant ? 'Edit Tenant' : 'Add New Tenant' }}</h3>
+          <button class="close-btn" (click)="cancelForm()">✕</button>
+        </div>
+        <form [formGroup]="tenantForm" (ngSubmit)="onSubmit()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Organization Name *</label>
+              <input type="text" formControlName="organizationName" placeholder="e.g. ABC Retail Ltd" />
+              <span *ngIf="tenantForm.get('organizationName')?.invalid && tenantForm.get('organizationName')?.touched"
+                class="validation-error">Required</span>
+            </div>
+            <div class="form-group">
+              <label>TIN Number *</label>
+              <input type="text" formControlName="tinNumber" placeholder="e.g. TIN001" />
+              <span *ngIf="tenantForm.get('tinNumber')?.invalid && tenantForm.get('tinNumber')?.touched"
+                class="validation-error">Required</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Phone *</label>
+              <input type="text" formControlName="phone" placeholder="e.g. 0911234567" />
+              <span *ngIf="tenantForm.get('phone')?.invalid && tenantForm.get('phone')?.touched"
+                class="validation-error">Required</span>
+            </div>
+            <div class="form-group">
+              <label>Business Type *</label>
+              <select formControlName="businessType">
+                <option *ngFor="let bt of businessTypes" [value]="bt.value">{{ bt.label }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Contact Person *</label>
+              <input type="text" formControlName="contactPersonName" placeholder="Full name" />
+              <span *ngIf="tenantForm.get('contactPersonName')?.invalid && tenantForm.get('contactPersonName')?.touched"
+                class="validation-error">Required</span>
+            </div>
+            <div class="form-group">
+              <label>Contact Email *</label>
+              <input type="email" formControlName="contactEmail" placeholder="email@example.com" />
+              <span *ngIf="tenantForm.get('contactEmail')?.invalid && tenantForm.get('contactEmail')?.touched"
+                class="validation-error">Valid email required</span>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancelForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="tenantForm.invalid">
+              {{ editingTenant ? 'Update' : 'Create' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <table *ngIf="tenants.length > 0">
+      <thead>
+        <tr>
+          <th>Organization</th>
+          <th>TIN</th>
+          <th>Phone</th>
+          <th>Business Type</th>
+          <th>Contact Person</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tenant of tenants">
+          <td>{{ tenant.organizationName }}</td>
+          <td>{{ tenant.tinNumber }}</td>
+          <td>{{ tenant.phone }}</td>
+          <td>{{ tenant.businessType }}</td>
+          <td>{{ tenant.contactPersonName }}</td>
+          <td>{{ tenant.contactEmail }}</td>
+          <td>
+            <span class="badge"
+              [class.badge-active]="tenant.isActive"
+              [class.badge-inactive]="!tenant.isActive">
+              {{ tenant.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="btn btn-sm btn-secondary" (click)="openEdit(tenant)">Edit</button>
+            <button class="btn btn-sm btn-danger" *ngIf="tenant.isActive"
+              (click)="deactivateTenant(tenant.id)">Deactivate</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="tenants.length === 0 && !error" class="empty-state">
+      No tenants found.
+    </div>
+  </div>
+</div>

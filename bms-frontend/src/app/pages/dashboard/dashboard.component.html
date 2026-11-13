@@ -1,0 +1,97 @@
+<div class="dashboard">
+  <nav class="navbar">
+    <h1>Building Management System</h1>
+    <div class="nav-links">
+      <a routerLink="/units">Units</a>
+      <a routerLink="/tenants">Tenants</a>
+      <a routerLink="/leases">Leases</a>
+      <a routerLink="/invoices">Invoices</a>
+      <a routerLink="/reports">Reports</a>
+      <app-notification-bell />
+      <span>{{ currentUser?.fullName }}</span>
+      <button (click)="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="content">
+    <h2>Welcome, {{ currentUser?.fullName }}</h2>
+    <p class="dashboard-role">Role: {{ currentUser?.role }}</p>
+    <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Total Units</h3>
+        <p>{{ summary?.totalUnits ?? 0 }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>Available Units</h3>
+        <p>{{ summary?.availableUnits ?? 0 }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>Occupied Units</h3>
+        <p>{{ summary?.occupiedUnits ?? 0 }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>Active Leases</h3>
+        <p>{{ summary?.activeLeases ?? 0 }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>Active Tenants</h3>
+        <p>{{ summary?.activeTenants ?? 0 }}</p>
+      </div>
+      <div class="stat-card stat-card-money">
+        <h3>Revenue This Month</h3>
+        <p>{{ summary?.revenueThisMonth ?? 0 | number:'1.0-0' }} ETB</p>
+      </div>
+      <div class="stat-card stat-card-warning">
+        <h3>Outstanding Balance</h3>
+        <p>{{ summary?.outstandingBalance ?? 0 | number:'1.0-0' }} ETB</p>
+      </div>
+      <div class="stat-card stat-card-warning">
+        <h3>Overdue Invoices</h3>
+        <p>{{ summary?.overdueInvoiceCount ?? 0 }}</p>
+      </div>
+    </div>
+
+    <div class="dashboard-charts">
+      <section class="chart-card">
+        <div class="chart-heading">
+          <div>
+            <h3>Revenue</h3>
+            <p>Payments received over the last six months</p>
+          </div>
+          <a routerLink="/reports">View reports</a>
+        </div>
+        <div class="revenue-chart" *ngIf="summary?.revenue as revenue">
+          <div class="revenue-column" *ngFor="let item of revenue">
+            <span class="revenue-value">{{ item.amount | number:'1.0-0' }}</span>
+            <div class="revenue-track">
+              <div class="revenue-bar" [style.height.%]="barHeight(item.amount)"></div>
+            </div>
+            <span class="revenue-month">{{ monthLabel(item.year, item.month) }}</span>
+          </div>
+        </div>
+      </section>
+      <section class="chart-card occupancy-card">
+        <div class="chart-heading">
+          <div>
+            <h3>Occupancy</h3>
+            <p>Current unit utilization</p>
+          </div>
+        </div>
+        <div class="occupancy-content">
+          <div class="occupancy-ring" [style.background]="occupancyStyle()">
+            <div class="occupancy-ring-center">
+              <strong>{{ summary?.totalUnits ? (summary!.occupiedUnits / summary!.totalUnits * 100 | number:'1.0-0') : 0 }}%</strong>
+              <span>occupied</span>
+            </div>
+          </div>
+          <div class="occupancy-legend">
+            <span><i class="legend-occupied"></i>Occupied <strong>{{ summary?.occupiedUnits ?? 0 }}</strong></span>
+            <span><i class="legend-available"></i>Available <strong>{{ summary?.availableUnits ?? 0 }}</strong></span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>

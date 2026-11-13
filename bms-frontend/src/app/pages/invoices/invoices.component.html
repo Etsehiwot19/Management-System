@@ -1,0 +1,227 @@
+<div class="page">
+  <nav class="navbar">
+    <h1>Invoices & Payments</h1>
+    <div class="nav-links">
+      <a routerLink="/dashboard">Dashboard</a>
+      <a routerLink="/leases">Leases</a>
+      <a routerLink="/tenants">Tenants</a>
+      <app-notification-bell />
+    </div>
+  </nav>
+
+  <div class="content">
+    <div class="page-header">
+      <h2>Invoices & Payments</h2>
+      <div class="header-actions">
+        <button class="btn btn-secondary" (click)="markOverdue()">Mark Overdue</button>
+        <button class="btn btn-primary" (click)="openGenerate()">Generate Invoices</button>
+      </div>
+    </div>
+
+    <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+    <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+    <!-- Generate Invoices Modal -->
+    <div *ngIf="showGenerateForm" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Generate Monthly Invoices</h3>
+          <button class="close-btn" (click)="cancelGenerate()">✕</button>
+        </div>
+        <form [formGroup]="generateForm" (ngSubmit)="submitGenerate()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Month *</label>
+              <select formControlName="month">
+                <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Year *</label>
+              <input type="number" formControlName="year" [min]="currentYear - 1" [max]="currentYear + 1" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancelGenerate()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Generate</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Record Payment Modal -->
+    <div *ngIf="showPaymentForm" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Record Payment — {{ selectedInvoice?.invoiceNumber }}</h3>
+          <button class="close-btn" (click)="cancelPayment()">✕</button>
+        </div>
+        <div class="invoice-summary">
+          <span>Tenant: <strong>{{ selectedInvoice?.tenantName }}</strong></span>
+          <span>Unit: <strong>{{ selectedInvoice?.unitNumber }}</strong></span>
+          <span>Amount Due: <strong>{{ selectedInvoice?.amountDue | number }} ETB</strong></span>
+          <span>Outstanding: <strong class="text-danger">{{ selectedInvoice?.outstandingBalance | number }} ETB</strong></span>
+        </div>
+        <form [formGroup]="paymentForm" (ngSubmit)="submitPayment()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Amount Paid (ETB) *</label>
+              <input type="number" formControlName="amountPaid" min="0.01" [max]="selectedInvoice?.outstandingBalance ?? null" />
+
+              <span *ngIf="paymentForm.get('amountPaid')?.invalid && paymentForm.get('amountPaid')?.touched" class="validation-error">Required</span>
+            </div>
+            <div class="form-group">
+              <label>Payment Date *</label>
+              <input type="date" formControlName="paymentDate" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Payment Method *</label>
+              <select formControlName="paymentMethod">
+                <option *ngFor="let m of paymentMethods" [value]="m.value">{{ m.label }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Reference Number</label>
+              <input type="text" formControlName="referenceNumber" placeholder="Transaction / Cheque no." />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" formControlName="notes" placeholder="Optional notes" />
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancelPayment()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="paymentForm.invalid">Record Payment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'invoices'" (click)="setTab('invoices')">Invoices</button>
+      <button class="tab-btn" [class.active]="activeTab === 'outstanding'" (click)="setTab('outstanding')">Outstanding Balances</button>
+      <button class="tab-btn" [class.active]="activeTab === 'payments'" (click)="setTab('payments')">Payment History</button>
+    </div>
+
+    <!-- Invoices Tab -->
+    <div *ngIf="activeTab === 'invoices'">
+      <div *ngIf="loading" class="loading">Loading...</div>
+      <table *ngIf="!loading && invoices.length > 0">
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Tenant</th>
+            <th>Unit</th>
+            <th>Period</th>
+            <th>Amount Due</th>
+            <th>Amount Paid</th>
+            <th>Outstanding</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let invoice of invoices">
+            <td>{{ invoice.invoiceNumber }}</td>
+            <td>{{ invoice.tenantName }}</td>
+            <td>{{ invoice.unitNumber }}</td>
+            <td>{{ invoice.periodMonth }}/{{ invoice.periodYear }}</td>
+            <td>{{ invoice.amountDue | number }}</td>
+            <td>{{ invoice.amountPaid | number }}</td>
+            <td [class.text-danger]="invoice.outstandingBalance > 0">{{ invoice.outstandingBalance | number }}</td>
+            <td>{{ invoice.dueDate | date:'mediumDate' }}</td>
+            <td>
+              <span class="badge"
+                [class.badge-active]="invoice.status === 'Paid'"
+                [class.badge-warning]="invoice.status === 'Issued'"
+                [class.badge-inactive]="invoice.status === 'Overdue'"
+                [class.badge-reserved]="invoice.status === 'Draft'">
+                {{ invoice.status }}
+              </span>
+            </td>
+            <td class="actions">
+              <button class="btn btn-sm btn-primary"
+                *ngIf="invoice.status !== 'Paid' && invoice.status !== 'Cancelled'"
+                (click)="openPayment(invoice)">Record Payment</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div *ngIf="!loading && invoices.length === 0" class="empty-state">
+        No invoices found. Generate monthly invoices to get started.
+      </div>
+    </div>
+
+    <!-- Outstanding Balances Tab -->
+    <div *ngIf="activeTab === 'outstanding'">
+      <table *ngIf="outstandingBalances.length > 0">
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>Unit</th>
+            <th>Total Due</th>
+            <th>Total Paid</th>
+            <th>Outstanding</th>
+            <th>Overdue Invoices</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let balance of outstandingBalances">
+            <td>{{ balance.tenantName }}</td>
+            <td>{{ balance.unitNumber }}</td>
+            <td>{{ balance.totalDue | number }} ETB</td>
+            <td>{{ balance.totalPaid | number }} ETB</td>
+            <td [class.text-danger]="balance.outstandingBalance > 0">{{ balance.outstandingBalance | number }} ETB</td>
+            <td>
+              <span *ngIf="balance.overdueInvoiceCount > 0" class="badge badge-inactive">
+                {{ balance.overdueInvoiceCount }} overdue
+              </span>
+              <span *ngIf="balance.overdueInvoiceCount === 0" class="badge badge-active">None</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div *ngIf="outstandingBalances.length === 0" class="empty-state">
+        No outstanding balances. All accounts are clear.
+      </div>
+    </div>
+
+    <!-- Payment History Tab -->
+    <div *ngIf="activeTab === 'payments'">
+      <div *ngIf="loading" class="loading">Loading...</div>
+<table *ngIf="invoices.length > 0">
+
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Tenant</th>
+            <th>Unit</th>
+            <th>Amount Paid</th>
+            <th>Payment Date</th>
+            <th>Method</th>
+            <th>Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let payment of payments">
+            <td>{{ payment.invoiceNumber }}</td>
+            <td>{{ payment.tenantName }}</td>
+            <td>{{ payment.unitNumber }}</td>
+            <td>{{ payment.amountPaid | number }} ETB</td>
+            <td>{{ payment.paymentDate | date:'mediumDate' }}</td>
+            <td>{{ payment.paymentMethod }}</td>
+            <td>{{ payment.referenceNumber || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div *ngIf="!loading && invoices.length === 0 && !error" class="empty-state">
+
+        No payment history found.
+      </div>
+    </div>
+  </div>
+</div>
